@@ -1,16 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.Mvc;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using System.Configuration;
 using System.Threading.Tasks;
+using AwardBot.Models;
+using System.Net.Http;
+using AwardBot.Services;
 
 namespace AwardBot.Controllers
 {
     public class AuthController : Controller
     {
+        public ActionResult Index()
+        {
+            return View();
+        }
+
         // GET: Auth
         public ActionResult Login()
         {
@@ -25,7 +31,6 @@ namespace AwardBot.Controllers
             return Redirect(authUri.Result.ToString());
         }
 
-        /*
         public async Task<ActionResult> Authorize(string code)
         {
             //Get access token
@@ -57,42 +62,29 @@ namespace AwardBot.Controllers
             }
             #endregion
 
-            if (authResult.UserInfo.DisplayableId.Contains(Settings.domain))
-            {
-                //Initialize Storage Account and Initizalize Clients
-                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(ConfigurationManager.ConnectionStrings["AzureWebJobsStorage"].ToString());
-                CloudQueueClient queueClient = storageAccount.CreateCloudQueueClient();
-                CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
-                CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+            #region Set Access Token & Refresh Token in Azue Storage Table
+            IStorageService storageService = new AzureStorageService();
+            storageService.SaveAccessToken(token);
+            storageService.SaveRefreshToken(token);
+            #endregion
 
-                #region Set Access Token & Refresh Token in Azue Storage Table
-                //Get Table reference
-                CloudTable tokenTable = tableClient.GetTableReference(Settings.tokenTableName);
+            ViewBag.Message = "Plase input group alias for using award bot";
 
-                //Update Access Token
-                TableOperation accessTokenQuery = TableOperation.Retrieve<TokenEntity>(Settings.partitionKeyName, Settings.accessTokenRowName);
-                TokenEntity accessTokenEntity = (TokenEntity)tokenTable.Execute(accessTokenQuery).Result;
-                accessTokenEntity.Token = token.access_token;
-                tokenTable.Execute(TableOperation.Replace(accessTokenEntity));
-
-                //Update Refresh Token
-                TableOperation refreshTokenQuery = TableOperation.Retrieve<TokenEntity>(Settings.partitionKeyName, Settings.refreshTokenRowname);
-                TokenEntity refreshTokenEntity = (TokenEntity)tokenTable.Execute(refreshTokenQuery).Result;
-                refreshTokenEntity.Token = token.refresh_token;
-                tokenTable.Execute(TableOperation.Replace(refreshTokenEntity));
-                #endregion
-
-                //Send queueMessage for fetching 
-                await fetchingUserprofileQueue.AddMessageAsync(new CloudQueueMessage("users"));
-
-                ViewBag.Message = "認証/認可完了しました。データ収集を開始します。";
-            }
-            else
-            {
-                ViewBag.Message = "あなたは対象ドメインではありません。データ収集を行いませんでした。";
-            }
             return View();
         }
-        */
+
+        [HttpPost]
+        public ActionResult Authorize(FormCollection collection)
+        {
+            string form = collection.GetValue("upn").AttemptedValue;
+            try
+            {
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                return View();
+            }
+        }
     }
 }

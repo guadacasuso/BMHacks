@@ -1,0 +1,11 @@
+﻿<h2>Authorized!</h2>
+
+@using (Html.BeginForm(
+                "Create",
+                "Email",
+                FormMethod.Post
+            ))
+{
+    <input type="text" name="upn" />
+    <input type="submit" value="send email" />
+}

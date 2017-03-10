@@ -6,7 +6,7 @@ using System.Web.Http;
 using System.Web.Routing;
 using System.Web.Mvc;
 using System.Web.Optimization;
-
+using AwardBot.Services;
 
 namespace AwardBot
 {
@@ -21,6 +21,10 @@ namespace AwardBot
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            //Initializing Storage
+            //IStorageService storageService = new AzureStorageService();
+            //storageService.InitializeStorage();
         }
     }
 }
